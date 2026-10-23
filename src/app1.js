@@ -8,6 +8,6 @@ app.use(express.json()); //Body Reader — reads JSON from req.body
 app.use(coookieParser()); //Cookie Reader — reads cookies from req.cookies
 
 app.use("/api/auth", authRoutes);
-app.use("/api/music", musicRoutes);
+app.use("/api/music", musicRoutes); //step 2
 
 module.exports = app;
