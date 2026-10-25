@@ -1,102 +1,130 @@
-const userModel = require("../models/user.model4.js"); //usme kaunsa chiz chaiye wo req zaruri hai
-
+const User = require("../models/user.model4.js");
 const jwt = require("jsonwebtoken");
-
 const bcrypt = require("bcryptjs");
 
-/* 
-step1=paila body req kia(stage par laya)
-step2=check kia koi exiting toh nahi aa gaya(koi 2 baar toh stage par nai aaya na)
-step3=user bana dia based on params (unko dance karne ka permission mil gaya)
-step4=haar admi ka unique id banaya taaki check karna aasan ho(unique id dia)
-step5=unko cookie storage me add kia taaki bbaarr baarr id naa likhna pode(bande ka id page par likh dia)
-step6=user create ho gaya aur uska details aa gaya
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+const publicUser = (user) => ({
+  id: user._id,
+  username: user.username,
+  email: user.email,
+  role: user.role,
+});
 
-*/
-
-async function registerUser(req, res) {
-  const { username, email, password, role = "user" } = req.body;
-
-  const isUserAlreadyExist = await userModel.findOne({
-    $or: [{ username }, { email }],
-  }); //$or->koi ek bhi paramter match hua toh wo op de degan
-
-  if (isUserAlreadyExist) {
-    return res.status(409).json({
-      message: "user already exist",
-    });
-  }
-
-  const hash = await bcrypt.hash(password, 10); //pass ko encrypt kia ,10 is salt->attack ko deelay karne kaam aata hai
-
-  const user = await userModel.create({
-    username,
-    email,
-    password: hash,
-    role,
-  });
-
+function sendToken(res, user, status, message) {
   const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
+    { id: user._id, role: user.role },
     process.env.JWT_SECRET,
+    { expiresIn: "7d" },
   );
-
-  res.cookie("token", token);
-
-  res.status(201).json({
-    message: "user is created",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    },
-  });
+  return res
+    .status(status)
+    .cookie("token", token, cookieOptions)
+    .json({ message, user: publicUser(user) });
 }
 
-async function loginUser(req, res) {
-  const { username, email, password } = req.body;
-
-  const user = await userModel.findOne({
-    $or: [{ username }, { email }],
-  });
-
-  if (!user) {
-    return res.status(401).json({
-      message: "invalid credentials",
-    });
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      message: "invalid credentials",
-    });
-  }
-
-  const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-  );
-
-  res.cookie("token", token);
-
-  res.status(200).json({
-    message: "user logged in succesfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    },
-  });
+function registerAs(role) {
+  return async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      if (!username || !email || !password)
+        return res
+          .status(400)
+          .json({ message: "Username, email and password are required" });
+      if (typeof password !== "string" || password.length < 8)
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 8 characters" });
+      const normalizedUsername = username.trim();
+      const normalizedEmail = email.trim().toLowerCase();
+      const exists = await User.findOne({
+        $or: [{ username: normalizedUsername }, { email: normalizedEmail }],
+      });
+      if (exists)
+        return res
+          .status(409)
+          .json({
+            message: "A user with that username or email already exists",
+          });
+      const user = await User.create({
+        username: normalizedUsername,
+        email: normalizedEmail,
+        password: await bcrypt.hash(password, 12),
+        role,
+      });
+      return sendToken(
+        res,
+        user,
+        201,
+        `${role === "artist" ? "Artist" : "User"} account created`,
+      );
+    } catch (error) {
+      if (error.name === "ValidationError")
+        return res.status(400).json({ message: error.message });
+      if (error.code === 11000)
+        return res
+          .status(409)
+          .json({
+            message: "A user with that username or email already exists",
+          });
+      console.error("Registration error:", error);
+      return res.status(500).json({ message: "Unable to create account" });
+    }
+  };
 }
 
-module.exports = { registerUser, loginUser };
+function loginAs(expectedRole) {
+  return async (req, res) => {
+    try {
+      const { identifier, email, username, password } = req.body;
+      const value = (identifier || email || username || "").trim();
+      if (!value || !password)
+        return res
+          .status(400)
+          .json({ message: "Email or username and password are required" });
+      const user = await User.findOne({
+        $or: [{ email: value.toLowerCase() }, { username: value }],
+      }).select("+password");
+      if (!user || !(await bcrypt.compare(password, user.password)))
+        return res.status(401).json({ message: "Invalid credentials" });
+      if (expectedRole && user.role !== expectedRole)
+        return res
+          .status(403)
+          .json({
+            message: `This account is registered as a ${user.role}. Please use the ${user.role} sign-in.`,
+          });
+      return sendToken(
+        res,
+        user,
+        200,
+        `${user.role === "artist" ? "Artist" : "User"} logged in successfully`,
+      );
+    } catch (error) {
+      console.error("Login error:", error);
+      return res.status(500).json({ message: "Unable to sign in" });
+    }
+  };
+}
+
+function logoutUser(req, res) {
+  return res
+    .clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    })
+    .status(200)
+    .json({ message: "Logged out successfully" });
+}
+
+module.exports = {
+  registerUser: registerAs("user"),
+  registerArtist: registerAs("artist"),
+  loginUser: loginAs("user"),
+  loginArtist: loginAs("artist"),
+  logoutUser,
+};

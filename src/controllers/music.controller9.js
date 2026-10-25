@@ -81,7 +81,11 @@ async function createAlbum(req, res) {
 }
 
 async function getAllMusic(req, res) {
-  const music = await musicModel.find().populate("artist"); //start giving details of the feild in ""
+  const music = await musicModel
+    .find()
+    .skip(1) //1st song skip and dusra tessra laao
+    .limit(2) //itna he amount ka content dikaho db me
+    .populate("artist"); //start giving details of the feild in ""
 
   res.status(200).json({ message: "music fetched succesfully", music: music });
 }

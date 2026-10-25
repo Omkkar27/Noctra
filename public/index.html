@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Noctra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="#"><b>n</b> Noctra</a>
+      <nav>
+        <button class="active" data-view="home">Home</button>
+        <button data-view="discover">Discover</button>
+        <button data-view="library">Your library</button>
+      </nav>
+      <section>
+        <small>YOUR SPACE</small>
+        <button id="newCollection">New collection</button>
+        <button id="likedSongs">Liked songs</button>
+        <button id="uploadMusic" hidden>Upload music</button>
+      </section>
+      <div class="lists">
+        <button>Late night drives</button><button>Warm &amp; familiar</button
+        ><button>Sunday morning</button><button>Focus, softly</button>
+      </div>
+      <div class="profile">
+        <b id="profileInitials">OM</b
+        ><span
+          ><strong id="profileName">Guest listener</strong
+          ><small id="profileRole">Sign in to sync</small></span
+        ><button id="authButton" class="profile-action">Sign in</button>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <button class="nav-arrow" aria-label="Back">&larr;</button>
+        <button class="nav-arrow" aria-label="Forward">&rarr;</button>
+        <label class="search-label"
+          ><span>Search</span>
+          <input
+            id="search"
+            placeholder="What do you want to listen to?" /></label
+        ><button class="premium" id="authHeaderButton">SIGN IN</button>
+      </header>
+      <section class="hero">
+        <div class="heroText">
+          <small id="heroEyebrow">A SLOW-BURN SELECTION</small>
+          <h1 id="heroTitle">Music for<br /><em>the in-between.</em></h1>
+          <p id="heroCopy">
+            Thoughtful sounds for the hours that don't need a name.
+          </p>
+          <button class="play mix">Play mix</button>
+        </div>
+        <div class="art">
+          <i></i><b>NOCTRA<br /><small>SESSIONS 021</small></b>
+        </div>
+      </section>
+      <section>
+        <div class="heading">
+          <div>
+            <small>PICKED FOR YOU</small>
+            <h2>Made for this moment</h2>
+          </div>
+          <button>See all</button>
+        </div>
+        <div id="albums" class="albums"></div>
+      </section>
+      <section>
+        <div class="heading">
+          <div>
+            <small>KEEP GOING</small>
+            <h2>Recently played</h2>
+          </div>
+          <button>See all</button>
+        </div>
+        <div id="tracks" class="tracks"></div>
+      </section>
+    </main>
+    <footer>
+      <div class="now">
+        <img id="nowArt" alt="" /><span
+          ><strong id="nowTitle">Luna</strong
+          ><small id="nowArtist">Bombay Bicycle Club</small></span
+        ><button id="like">Like</button>
+      </div>
+      <div class="controls">
+        <div>
+          <button id="previous">Previous</button
+          ><button id="toggle" class="toggle">Play</button
+          ><button id="next">Next</button>
+        </div>
+        <label
+          ><span id="elapsed">0:00</span
+          ><input id="progress" type="range" min="0" max="100" value="0" /><span
+            id="duration"
+            >0:00</span
+          ></label
+        >
+      </div>
+      <div class="tools">
+        Volume <input id="volume" type="range" min="0" max="100" value="65" />
+      </div>
+    </footer>
+    <dialog id="authDialog" class="auth-dialog">
+      <form id="authForm" method="dialog">
+        <button
+          type="button"
+          class="dialog-close"
+          id="closeAuth"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+        <p class="eyebrow">WELCOME TO NOCTRA</p>
+        <h2 id="authTitle">Sign in</h2>
+        <div class="auth-tabs">
+          <button type="button" class="active" data-role="user">Listener</button
+          ><button type="button" data-role="artist">Artist</button>
+        </div>
+        <label
+          >Username or email<input
+            id="authIdentifier"
+            autocomplete="username"
+            required
+        /></label>
+        <label id="emailField" hidden
+          >Email<input id="authEmail" type="email" autocomplete="email"
+        /></label>
+        <label
+          >Password<input
+            id="authPassword"
+            type="password"
+            autocomplete="current-password"
+            minlength="8"
+            required
+        /></label>
+        <p id="authMessage" class="auth-message" aria-live="polite"></p>
+        <button class="auth-submit" id="authSubmit" type="submit">
+          Sign in
+        </button>
+        <button class="auth-switch" id="authSwitch" type="button">
+          New here? Create an account
+        </button>
+      </form>
+    </dialog>
+    <dialog id="uploadDialog" class="auth-dialog">
+      <form id="uploadForm" method="dialog">
+        <button
+          type="button"
+          class="dialog-close"
+          id="closeUpload"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+        <p class="eyebrow">ARTIST STUDIO</p>
+        <h2>Upload a track</h2>
+        <label
+          >Track title<input id="trackTitle" maxlength="120" required
+        /></label>
+        <label
+          >Audio file<input
+            id="trackFile"
+            type="file"
+            accept="audio/*"
+            required
+        /></label>
+        <p id="uploadMessage" class="auth-message" aria-live="polite"></p>
+        <button class="auth-submit" id="uploadSubmit" type="submit">
+          Upload track
+        </button>
+      </form>
+    </dialog>
+    <script src="app.js"></script>
+  </body>
+</html>
